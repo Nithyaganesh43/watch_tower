@@ -39,14 +39,18 @@ router.get(
     scope: ['profile', 'email'],
   })
 );
+
+
 // Google callback
 router.get(
   '/google/callback',
   passport.authenticate('google', {
     failureRedirect: `${FRONTEND_URL}/login/failed`,
+    session: false, // <-- ADD THIS LINE
   }),
   async (req, res) => {
     try {
+      // The rest of your code remains the same
       const { email, fullName } = req.user;
       let user = await User.findOne({ email });
       if (!user) {
