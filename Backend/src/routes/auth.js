@@ -40,7 +40,6 @@ router.get(
   })
 );
 
-
 // Google callback
 router.get(
   '/google/callback',
