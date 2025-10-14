@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
 
 const serverSchema = new mongoose.Schema(
   {
-    userEmail: {
+    email: {
       type: String,
       lowercase: true,
       trim: true,
@@ -52,9 +52,7 @@ const serverSchema = new mongoose.Schema(
       enum: ['online', 'offline', 'checking'],
       default: 'checking',
     },
-    responseTime: { type: Number, default: 0 },
     lastCheck: { type: Date, default: Date.now },
-    consecutiveFailures: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

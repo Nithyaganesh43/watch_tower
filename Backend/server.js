@@ -9,9 +9,9 @@ const app = express();
 app.use(require('./src/routes/serverInit'));
 
 app.use('/auth', authRoutes);
-
+const rateL=rateLimiter(50, 5 * 60 * 1000);
  
-app.use('/servers', rateLimiter(50, 5 * 60 * 1000), serverRoutes);
+app.use('/servers',  serverRoutes);
 
 app.use((error, req, res, next) => {
   console.error('Error:', error);

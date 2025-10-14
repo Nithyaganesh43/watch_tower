@@ -1,44 +1,86 @@
 const express = require('express');
-const { rateLimiter } = require('../middleware/rateLimiter');
+const passport = require('passport');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
+const { getToken } = require('../utils/cookie');
+const { User } = require('../models/Model');
+const { auth } = require('../middleware/auth');
+
 const router = express.Router();
+const FRONTEND_URL = 'https://watchtower-24-7.vercel.app';
+const GOOGLE_CLIENT_ID = process.env.CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.CLIENT_SECRET;
 
-const authenticateRateLimiter = rateLimiter(1000, 5 * 60 * 1000);
-const checkRateLimiter = rateLimiter(10000, 5 * 60 * 1000);
- 
-//google callback 
+// Configure Google strategy here itself
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callbackURL: 'https://thewatchtower.onrender.com/auth/google/callback',
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails[0].value;
+        const fullName = profile.displayName;
+        done(null, { email, fullName });
+      } catch (err) {
+        done(err, null);
+      }
+    }
+  )
+);
 
-router.get('/check', checkRateLimiter, async (req, res) => {
-  try { 
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
-  } catch (error) {
-    
+// Google callback
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: `${FRONTEND_URL}/login/failed`,
+  }),
+  async (req, res) => {
+    try {
+      const { email, fullName } = req.user;
+      let user = await User.findOne({ email });
+      if (!user) {
+        user = new User({ email, fullName });
+        await user.save();
+      }
+      const token = getToken({ email, fullName });
+      res.cookie('watchtower_token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+      res.redirect(FRONTEND_URL);
+    } catch (err) {
+      console.error('Error in Google callback:', err);
+      res.redirect(`${FRONTEND_URL}/login/failed`);
+    }
   }
+);
+
+// /check route
+router.get('/check', auth, (req, res) => {
+  res.status(200).json({ message: 'Authorized' });
 });
 
-// Logout
-router.post('/logout',   async (req, res) => {
+// logout
+router.post('/logout', (req, res) => {
   try {
-   
-  } catch (error) { 
+    res.cookie('watchtower_token', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      expires: new Date(0),
+    });
+    res.status(200).json({ message: 'Successfully logged out' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
 module.exports = router;
-
-// User {
-//   email: String (max 100 chars, email format)
-//   fullName: String (max 50 chars)
-//   createdAt: Date
-//   updatedAt: Date
-// }
-
-// Server {
-//   userEmail: String (max 100 chars)
-//   url: String (max 200 chars)
-//   status: Enum ['online','offline','checking']
-//   responseTime: Number
-//   lastCheck: Date
-//   consecutiveFailures: Number
-//   createdAt: Date
-//   updatedAt: Date
-// }
