@@ -179,14 +179,9 @@ router.delete('/:id', async (req, res) => {
 
 
 module.exports = router;
-
-//Esp routes - not frontend 
-// 1. GET /getall?API_KEY=... – fetch all servers
-
-// Request:
-
-// GET /monitor/getall?API_KEY=api_key
-
+ 
+// 1. GET https://thewatchtower.onrender.com/servers/getall?API_KEY=admin12345 – fetch all servers
+ 
 
 // Response:
 
@@ -210,17 +205,16 @@ module.exports = router;
 //   "error": "Invalid API_KEY"
 // }
 
-// 2. POST /reportallservers?API_KEY=... – report server status
+// 2. https://thewatchtower.onrender.com/servers/reportallservers?API_KEY=admin12345 – report server status
 
 // Request:
 
-// POST /monitor/reportallservers?API_KEY=api_key
 // Content-Type: application/json
 
 // {
 //   "report": {
 //     "failed": [
-//       "650d4f2f1c4a1b00123abcd2",
+//       "650d4f2f1c4a1b00123abcd2",// list of ids of failed servers only 
 //       "650d4f2f1c4a1b00123abcd5"
 //     ]
 //   }
@@ -239,12 +233,7 @@ module.exports = router;
 //   "message": "Server statuses updated successfully"
 // }
 
-
-// If the API_KEY is missing or invalid:
-
-// {
-//   "error": "Invalid API_KEY"
-// }
+ 
 
 
 // If the request body is malformed:
