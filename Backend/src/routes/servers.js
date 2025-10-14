@@ -5,6 +5,69 @@ const { auth } = require('../middleware/auth');
 const { validateUrl } = require('../utils/validation');
 
 const router = express.Router();
+
+
+
+const API_KEY = 'admin12345';
+
+router.get('/getall', async (req, res) => {
+  try {
+    const key = req.query.API_KEY;
+    if (key !== API_KEY)
+      return res.status(403).json({ error: 'Invalid API_KEY' });
+
+    const servers = await Server.find().sort({ createdAt: 1 });
+
+    const formattedServers = servers.map(({ _id, url }) => ({
+      id: _id,
+      url,
+    }));
+
+    res.json({ servers: formattedServers });
+  } catch (error) {
+    console.error('Server data fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch server data' });
+  }
+});
+
+router.post('/reportallservers', async (req, res) => {
+  try {
+    const key = req.query.API_KEY || req.headers['x-api-key'];
+    if (key !== API_KEY)
+      return res.status(403).json({ error: 'Invalid API_KEY' });
+
+    let { report } = req.body;
+    if (!report || !Array.isArray(report.failed))
+      return res.status(400).json({ error: 'Invalid report format' });
+
+    const now = new Date();
+
+    await Server.updateMany(
+      {
+        _id: {
+          $in: report.failed.map((id) => new mongoose.Types.ObjectId(id)),
+        },
+      },
+      { $set: { status: 'offline', lastCheck: now } }
+    );
+
+    await Server.updateMany(
+      {
+        _id: {
+          $nin: report.failed.map((id) => new mongoose.Types.ObjectId(id)),
+        },
+      },
+      { $set: { status: 'online', lastCheck: now } }
+    );
+
+    res.json({ message: 'Server statuses updated successfully' });
+  } catch (error) {
+    console.error('Server report update error:', error);
+    res.status(500).json({ error: 'Failed to update server statuses' });
+  }
+});
+
+
 router.use(auth);
 
 // Add new server
@@ -114,61 +177,6 @@ router.delete('/:id', async (req, res) => {
 });
 
 
-
-const API_KEY ='admin12345'
-
-router.get('/getall', async (req, res) => {
-  try {
-    const key = req.query.API_KEY;
-    if (key !== API_KEY)
-      return res.status(403).json({ error: 'Invalid API_KEY' });
-
-    const servers = await Server.find().sort({ createdAt: 1 });
-
-    const formattedServers = servers.map(({ _id, url }) => ({
-      id: _id,
-      url,
-    }));
-
-    res.json({ servers: formattedServers });
-  } catch (error) {
-    console.error('Server data fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch server data' });
-  }
-});
-
-router.post('/reportallservers', async (req, res) => {
-  try {
-    const key = req.query.API_KEY || req.headers['x-api-key'];
-    if (key !== API_KEY)
-      return res.status(403).json({ error: 'Invalid API_KEY' });
-
-    let { report } = req.body;
-    if (!report || !Array.isArray(report.failed))
-      return res.status(400).json({ error: 'Invalid report format' });
-
-    const now = new Date();
-
-  await Server.updateMany(
-    {
-      _id: { $in: report.failed.map((id) => new mongoose.Types.ObjectId(id)) },
-    },
-    { $set: { status: 'offline', lastCheck: now } }
-  );
-
-  await Server.updateMany(
-    {
-      _id: { $nin: report.failed.map((id) => new mongoose.Types.ObjectId(id)) },
-    },
-    { $set: { status: 'online', lastCheck: now } }
-  );
-
-    res.json({ message: 'Server statuses updated successfully' });
-  } catch (error) {
-    console.error('Server report update error:', error);
-    res.status(500).json({ error: 'Failed to update server statuses' });
-  }
-});
 
 module.exports = router;
 
