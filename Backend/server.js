@@ -1,16 +1,13 @@
 require('dotenv').config();
 const express = require('express');
-const { connectToDb } = require('./src/config/database');
+const connectToDb  = require('./src/config/database');
 const authRoutes = require('./src/routes/auth');
 const serverRoutes = require('./src/routes/servers');
-const globalRoutes = require('./src/routes/global');
-const { startMonitoring } = require('./src/services/monitoring');
 const { rateLimiter } = require('./src/middleware/rateLimiter');
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(require('./src/routes/serverInit'));
 
-app.use('/global',  globalRoutes);
 app.use('/auth', authRoutes);
 
  
@@ -27,7 +24,6 @@ app.use('*', (req, res) => {
 
 connectToDb()
   .then(() => {
-    startMonitoring();
     app.listen(PORT, () => {
       console.log(`Watchtower server running on port ${PORT}`);
     });

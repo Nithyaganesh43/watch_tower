@@ -1,16 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const Server = require('../models/Server');
+const { User, Server } = require('../models/Model');
 const { authenticateToken } = require('../middleware/auth');
 const { validateUrl } = require('../utils/validation');
-const { pingServer } = require('../services/monitoring');
 
 const router = express.Router();
 
 // Add new server
 router.post('/add', authenticateToken, async (req, res) => {
   try {
-    const { url, alertEnabled = true } = req.body;
+    const { url = true } = req.body;
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
@@ -40,27 +39,22 @@ router.post('/add', authenticateToken, async (req, res) => {
       userEmail: req.user.email,
     });
 
-    if (serverCount >= req.user.maxServers) {
+    if (serverCount >= 100) {
       return res.status(400).json({
-        error: `Maximum server limit (${req.user.maxServers}) reached.`,
+        error: `Maximum server limit 100 reached.`,
       });
     }
-
-    // Initial ping
-    const pingResult = await pingServer(normalizedUrl);
 
     const server = new Server({
       userEmail: req.user.email,
       url: normalizedUrl,
-      alertEnabled: Boolean(alertEnabled),
-      status: pingResult.success ? 'online' : 'offline',
-      responseTime: pingResult.responseTime,
+      status: 'offline',
+      responseTime: 0,
       lastCheck: new Date(),
-      consecutiveFailures: pingResult.success ? 0 : 1,
+      consecutiveFailures: 0,
     });
 
     await server.save();
- 
 
     res.status(201).json({
       message: 'Server added successfully',
@@ -76,15 +70,11 @@ router.post('/add', authenticateToken, async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const servers = await Server.find({
-      userEmail: req.user.email
-    }).select(
-      '_id url status responseTime lastCheck alertEnabled consecutiveFailures createdAt'
-    ).sort({ createdAt: 1 });
+      userEmail: req.user.email,
+    }).sort({ createdAt: 1 });
 
     res.json({
       servers,
-      maxServers: req.user.maxServers,
-      currentCount: servers.length
     });
   } catch (error) {
     console.error('Server data fetch error:', error);
@@ -103,7 +93,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const deletedServer = await Server.findOneAndDelete({
       _id: id,
-      userEmail: req.user.email
+      userEmail: req.user.email,
     });
 
     if (!deletedServer) {
@@ -114,44 +104,31 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       message: 'Server removed successfully',
       server: {
         id: deletedServer._id,
-        url: deletedServer.url
-      }
+        url: deletedServer.url,
+      },
     });
   } catch (error) {
     console.error('Server deletion error:', error);
     res.status(500).json({ error: 'Failed to remove server' });
   }
-}); 
-
-// Get server status summary
-router.get('/status', authenticateToken, async (req, res) => {
-  try {
-    const servers = await Server.find({
-      userEmail: req.user.email
-    });
-
-    const stats = {
-      total: servers.length,
-      online: servers.filter(s => s.status === 'online').length,
-      offline: servers.filter(s => s.status === 'offline').length,
-      checking: servers.filter(s => s.status === 'checking').length
-    };
-
-    res.json({
-      stats,
-      servers: servers.map(server => ({
-        _id: server._id,
-        url: server.url,
-        status: server.status,
-        responseTime: server.responseTime,
-        lastCheck: server.lastCheck,
-        consecutiveFailures: server.consecutiveFailures
-      }))
-    });
-  } catch (error) {
-    console.error('Server status fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch server status' });
-  }
 });
 
 module.exports = router;
+
+// User {
+//   email: String (max 100 chars, email format)
+//   fullName: String (max 50 chars)
+//   createdAt: Date
+//   updatedAt: Date
+// }
+
+// Server {
+//   userEmail: String (max 100 chars)
+//   url: String (max 200 chars)
+//   status: Enum ['online','offline','checking']
+//   responseTime: Number
+//   lastCheck: Date
+//   consecutiveFailures: Number
+//   createdAt: Date
+//   updatedAt: Date
+// }

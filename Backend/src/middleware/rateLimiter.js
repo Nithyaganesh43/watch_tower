@@ -2,9 +2,7 @@ class SimpleRateLimiter {
   constructor(maxRequests, windowMs) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
-    this.requests = new Map();
-
-    // Cleanup every 5 minutes
+    this.requests = new Map(); 
     setInterval(() => this.cleanup(), 5 * 60 * 1000);
   }
 
