@@ -61,7 +61,7 @@ router.get(
     }
   }
 );
-
+ 
 // /check route
 router.get('/check', auth, (req, res) => {
   res.status(200).json({ message: 'Authorized' });

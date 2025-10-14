@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const { Server } = require('../models/Model');
 const { auth } = require('../middleware/auth');
 const { validateUrl } = require('../utils/validation');
-const req = require('express/lib/request');
 
 const router = express.Router();
 router.use(auth);
@@ -44,7 +43,6 @@ router.post('/add', async (req, res) => {
       status,
       lastCheck,
       createdAt,
-      updatedAt,
     } = server;
 
     res.status(201).json({
@@ -55,7 +53,7 @@ router.post('/add', async (req, res) => {
         status,
         lastCheck,
         createdAt,
-        updatedAt,
+        
       },
     });
   } catch (error) {
@@ -78,7 +76,7 @@ router.get('/', async (req, res) => {
         status,
         lastCheck,
         createdAt,
-        updatedAt,
+        
       })
     );
 
@@ -117,8 +115,7 @@ router.delete('/:id', async (req, res) => {
 
 
 
-const API_KEY =
-  'venbvhibeihvbcxibihabvierbgufgybgfy423rg3yruer4$%^&Y567UGRt5678UHGFtr567Ytr6577';
+const API_KEY ='admin12345'
 
 router.get('/getall', async (req, res) => {
   try {
@@ -152,15 +149,19 @@ router.post('/reportallservers', async (req, res) => {
 
     const now = new Date();
 
-    await Server.updateMany(
-      { _id: { $in: report.failed.map((id) => mongoose.Types.ObjectId(id)) } },
-      { $set: { status: 'offline', lastCheck: now } }
-    );
+  await Server.updateMany(
+    {
+      _id: { $in: report.failed.map((id) => new mongoose.Types.ObjectId(id)) },
+    },
+    { $set: { status: 'offline', lastCheck: now } }
+  );
 
-    await Server.updateMany(
-      { _id: { $nin: report.failed.map((id) => mongoose.Types.ObjectId(id)) } },
-      { $set: { status: 'online', lastCheck: now } }
-    );
+  await Server.updateMany(
+    {
+      _id: { $nin: report.failed.map((id) => new mongoose.Types.ObjectId(id)) },
+    },
+    { $set: { status: 'online', lastCheck: now } }
+  );
 
     res.json({ message: 'Server statuses updated successfully' });
   } catch (error) {
@@ -176,7 +177,7 @@ module.exports = router;
 
 // Request:
 
-// GET /monitor/getall?API_KEY=venbvhibeihvbcxibihabvierbgufgybgfy423rg3yruer4$%^&Y567UGRt5678UHGFtr567Ytr6577
+// GET /monitor/getall?API_KEY=api_key
 
 
 // Response:
@@ -205,7 +206,7 @@ module.exports = router;
 
 // Request:
 
-// POST /monitor/reportallservers?API_KEY=venbvhibeihvbcxibihabvierbgufgybgfy423rg3yruer4$%^&Y567UGRt5678UHGFtr567Ytr6577
+// POST /monitor/reportallservers?API_KEY=api_key
 // Content-Type: application/json
 
 // {
