@@ -1,32 +1,44 @@
 require('dotenv').config();
 const express = require('express');
-const connectToDb  = require('./src/config/database');
+const connectToDb = require('./src/config/database');
 const authRoutes = require('./src/routes/auth');
 const serverRoutes = require('./src/routes/servers');
+const serverInit = require('./src/routes/serverInit');
 const { rateLimiter } = require('./src/middleware/rateLimiter');
-const PORT = process.env.PORT || 3000;
+require('./pingping');
+
 const app = express();
-app.use(require('./src/routes/serverInit'));
+const PORT = process.env.PORT || 3000;
 
-app.use('/auth', authRoutes);
-const rateL=rateLimiter(50, 5 * 60 * 1000);
- 
-app.use('/servers',  serverRoutes);
+// Middlewares
+app.use(express.json());
+app.use(serverInit);
 
-app.use((error, req, res, next) => {
-  console.error('Error:', error);
-  res.status(500).json({ error: error.message });
-});
+// Rate limiters
+const authRateLimiter = rateLimiter(50, 5 * 60 * 1000);
+const serverRateLimiter = rateLimiter(50, 5 * 60 * 1000);
 
+// Routes
+app.use('/auth', authRateLimiter, authRoutes);
+app.use('/servers', serverRateLimiter, serverRoutes);
+
+// 404 / catch-all
 app.use('*', (req, res) => {
   res.status(200).json({ message: 'Welcome to Watchtower API' });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: err.message });
+});
+
+// Start server after DB connection
 connectToDb()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Watchtower server running on port ${PORT}`);
-    });
+    app.listen(PORT, () =>
+      console.log(`Watchtower server running on port ${PORT}`)
+    );
   })
   .catch((error) => {
     console.error('Failed to start server:', error);
