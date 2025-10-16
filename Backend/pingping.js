@@ -1,7 +1,7 @@
 const axios = require('axios');
 const https = require('https');
 
-const TARGET_URL = 'https://internetprotocal.onrender.com/ping';
+const TARGET_URL = 'https://internetprotocal.onrender.com/watchtower';
 const PING_TIMEOUT = 5000;
 
 const client = axios.create({
