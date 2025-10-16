@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Menu, X, Home, UserIcon, LogOut } from "lucide-react"
+import { Menu, X, Home, User, LogOut } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,9 @@ interface UserData {
   email?: string | null
 }
 
-export default function Navbar() {
+export default function Navbar({
+  context = "default" as "default" | "dashboard",
+}: { context?: "default" | "dashboard" }) {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<UserData | null>(null)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
@@ -64,6 +66,10 @@ export default function Navbar() {
     router.push("/")
   }
 
+  const handleDashboard = () => {
+    router.push("/dashboard")
+  }
+
   const handleLogout = async () => {
     setShowLogoutDialog(true)
   }
@@ -101,7 +107,15 @@ export default function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              {!user && (
+              {context === "dashboard" || user ? (
+                <button
+                  onClick={handleDashboard}
+                  className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </button>
+              ) : (
                 <button
                   onClick={handleHome}
                   className="flex items-center space-x-2 text-slate-300 hover:text-white transition-colors"
@@ -110,6 +124,7 @@ export default function Navbar() {
                   <span>Home</span>
                 </button>
               )}
+
               <button
                 onClick={handleHowItWorks}
                 className="text-slate-300 hover:text-white transition-colors font-bold"
@@ -120,8 +135,7 @@ export default function Navbar() {
               {user ? (
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2 text-slate-300">
-                    <UserIcon className="w-4 h-4" />
-                    {/* Email might be unavailable; keep structure stable */}
+                    <User className="w-4 h-4" />
                     {user.email ? (
                       <span className="text-sm">{user.email}</span>
                     ) : (
@@ -136,14 +150,14 @@ export default function Navbar() {
                     <span>Logout</span>
                   </button>
                 </div>
-              ) : (
+              ) : context !== "dashboard" ? (
                 <button
                   onClick={handleGetStarted}
                   className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors duration-200 text-lg"
                 >
                   Get Started
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* Mobile menu button */}
@@ -158,7 +172,18 @@ export default function Navbar() {
           {isOpen && (
             <div className="md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 bg-slate-800/95 rounded-lg mt-2">
-                {!user && (
+                {context === "dashboard" || user ? (
+                  <button
+                    onClick={() => {
+                      handleDashboard()
+                      setIsOpen(false)
+                    }}
+                    className="flex items-center space-x-2 w-full text-left px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors"
+                  >
+                    <Home className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </button>
+                ) : (
                   <button
                     onClick={() => {
                       handleHome()
@@ -179,29 +204,12 @@ export default function Navbar() {
                 >
                   How It Works
                 </button>
-
                 {user ? (
-                  <>
-                    <div className="flex items-center space-x-2 px-3 py-2 text-slate-300 border-t border-slate-700 mt-2 pt-2">
-                      <UserIcon className="w-4 h-4" />
-                      {user.email ? (
-                        <span className="text-sm">{user.email}</span>
-                      ) : (
-                        <span className="sr-only">User</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        handleLogout()
-                        setIsOpen(false)
-                      }}
-                      className="flex items-center space-x-2 w-full text-left px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
-                    </button>
-                  </>
-                ) : (
+                  <div className="flex items-center space-x-2 px-3 py-2 text-slate-300 border-t border-slate-700 mt-2 pt-2">
+                    <User className="w-4 h-4" />
+                    {user.email ? <span className="text-sm">{user.email}</span> : <span className="sr-only">User</span>}
+                  </div>
+                ) : context !== "dashboard" ? (
                   <button
                     onClick={() => {
                       handleGetStarted()
@@ -211,7 +219,7 @@ export default function Navbar() {
                   >
                     Get Started
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           )}
