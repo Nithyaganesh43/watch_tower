@@ -18,7 +18,7 @@ function schedulePing() {
   setTimeout(() => {
     pingOnce();
     schedulePing();
-  }, 5 * 60 * 1000);
+  }, 10 * 60 * 1000);
 }
 
 schedulePing();
